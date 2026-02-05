@@ -1,0 +1,51 @@
+/* You can add global styles to this file, and also import other style files */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+.card {
+    border-radius: 12px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+}
+
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 8px 20px;
+}
+
+.form-control, .form-select {
+    border-radius: 8px;
+    padding: 10px 15px;
+    border: 1px solid #dee2e6;
+}
+
+.form-control:focus, .form-select:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+}
+
+.navbar {
+    padding: 1rem 0;
+}
+
+.badge {
+    padding: 6px 12px;
+    font-weight: 500;
+}
+
+.table thead th {
+    font-weight: 600;
+    border-top: 0;
+}
+
+.active {
+    font-weight: 600;
+    border-bottom: 2px solid white;
+}

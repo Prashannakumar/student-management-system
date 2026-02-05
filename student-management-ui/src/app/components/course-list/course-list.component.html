@@ -1,0 +1,50 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-primary mb-0"><i class="fas fa-book me-2"></i>Courses</h2>
+    <a routerLink="/courses/add" class="btn btn-success">
+        <i class="fas fa-plus-circle me-1"></i> Add Course
+    </a>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="bg-light text-secondary text-uppercase small">
+                    <tr>
+                        <th class="ps-4">ID</th>
+                        <th>Course Name</th>
+                        <th>Duration</th>
+                        <th>Fee</th>
+                        <th class="text-center pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let course of courses" class="align-middle">
+                        <td class="ps-4 fw-bold">#{{ course.courseId }}</td>
+                        <td>{{ course.courseName }}</td>
+                        <td>{{ course.duration }}</td>
+                        <td>{{ course.courseFee | currency:'USD' }}</td>
+                        <td class="text-center pe-4">
+                            <div class="btn-group btn-group-sm">
+                                <a [routerLink]="['/courses/edit', course.courseId]" class="btn btn-outline-primary"
+                                    title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button (click)="deleteCourse(course.courseId)" class="btn btn-outline-danger"
+                                    title="Delete">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr *ngIf="courses.length === 0">
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <i class="fas fa-book-open fa-3x mb-3 d-block opacity-25"></i>
+                            No courses available.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
