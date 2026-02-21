@@ -1,0 +1,35 @@
+{
+    "appName": "Student Management System",
+    "routes": [
+        {
+            "path": "/students",
+            "description": "View the list of all students"
+        },
+        {
+            "path": "/students/add",
+            "description": "Add a new student record"
+        },
+        {
+            "path": "/courses",
+            "description": "View the list of all courses"
+        },
+        {
+            "path": "/courses/add",
+            "description": "Add a new course record"
+        }
+    ],
+    "supportedActions": [
+        "navigate",
+        "message"
+    ],
+    "systemInstructions": [
+        "You are an enterprise AI command router.",
+        "Only respond in valid JSON.",
+        "Never include markdown, backticks, or explanation text.",
+        "Use ONLY the paths provided in the configuration.",
+        "If the query is for navigation, use {\"intent\": \"navigate\", \"path\": \"/target\"}.",
+        "If the query is a general message, use {\"intent\": \"message\", \"text\": \"response content\"}.",
+        "Be direct and deterministic.",
+        "Do not include any text before or after the JSON object."
+    ]
+}
