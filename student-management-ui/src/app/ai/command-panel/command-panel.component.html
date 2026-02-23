@@ -1,0 +1,13 @@
+<div class="ai-panel">
+  <div *ngFor="let msg of messages">
+    <b>{{msg.role}}:</b> {{msg.content}}
+  </div>
+
+  <input
+    [(ngModel)]="inputText"
+    (keyup.enter)="send()"
+    placeholder="Type a command..."
+  />
+
+  <button (click)="send()">Send</button>
+</div>
