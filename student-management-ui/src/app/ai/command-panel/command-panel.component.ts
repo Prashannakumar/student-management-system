@@ -5,6 +5,7 @@ import { AI_ACTIONS } from '../ai-actions';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { trigger, transition, style, animate } from '@angular/animations';
+import { AiContextService } from '../services/ai-context.service';
 
 @Component({
   selector: 'app-command-panel',
@@ -35,7 +36,8 @@ export class CommandPanelComponent implements AfterViewChecked {
 
   constructor(
     private aiService: AiAgentService,
-    private router: Router
+    private router: Router,
+    private aiContext: AiContextService
   ) { }
 
   ngAfterViewChecked() {
@@ -68,12 +70,13 @@ export class CommandPanelComponent implements AfterViewChecked {
     this.messages.push({ role: 'user', content: userMessage });
     this.inputText = '';
     this.isLoading = true;
-
+    const activeForm = this.aiContext.getActiveForm();
     const context = {
       availableActions: Object.keys(AI_ACTIONS).map((key: any) => ({
         id: key,
         description: AI_ACTIONS[key].route
-      }))
+      })),
+      activeForm: activeForm
     };
 
     this.aiService.process(userMessage, context)
@@ -85,7 +88,19 @@ export class CommandPanelComponent implements AfterViewChecked {
             if (action) {
               this.router.navigateByUrl(action.route);
             }
-          } else {
+          }
+          if (res.intent === 'fill_form') {
+            const form = this.aiContext.getActiveFormGroup();
+
+            if (form) {
+              Object.keys(res.payload).forEach(key => {
+                if (form.contains(key)) {
+                  form.get(key)?.setValue(res.payload[key]);
+                }
+              });
+            }
+          }
+          else {
             this.messages.push({ role: 'ai', content: res.payload?.message || "I'm sorry, I couldn't process that." });
           }
         },

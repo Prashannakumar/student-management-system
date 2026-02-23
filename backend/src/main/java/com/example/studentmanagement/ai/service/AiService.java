@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 public class AiService {
@@ -18,20 +20,29 @@ public class AiService {
     public AiResponse process(AiRequest request) {
 
         String prompt = promptBuilder.build(request);
-
         String rawResponse = geminiClient.generate(prompt);
 
         try {
             String cleaned = extractJson(rawResponse);
             AiResponse response = objectMapper.readValue(cleaned, AiResponse.class);
 
-            // 🔒 SECURITY CHECK
-            if (!isValidAction(response.getActionId(), request)) {
-                return new AiResponse(
-                        "custom",
-                        null,
-                        java.util.Map.of("message", "Invalid or unauthorized action")
-                );
+            // Navigation validation
+            if ("navigate".equals(response.getIntent())) {
+                if (!isValidAction(response.getActionId(), request)) {
+                    return new AiResponse("custom", null,
+                            Map.of("message", "Invalid navigation action"));
+                }
+            }
+
+            // Form validation
+            if ("fill_form".equals(response.getIntent())) {
+
+                if (response.getPayload() == null ||
+                        !isValidFormPayload(response.getPayload(), request)) {
+
+                    return new AiResponse("custom", null,
+                            Map.of("message", "Invalid form fields detected"));
+                }
             }
 
             return response;
@@ -40,7 +51,7 @@ public class AiService {
             return new AiResponse(
                     "custom",
                     null,
-                    java.util.Map.of("message", "AI response parsing failed")
+                    Map.of("message", "AI response parsing failed")
             );
         }
     }
@@ -76,5 +87,33 @@ public class AiService {
         }
 
         return false;
+    }
+
+    private boolean isValidFormPayload(Map<String, Object> payload, AiRequest request) {
+
+        Object formObj = request.getContext().get("activeForm");
+
+        if (!(formObj instanceof java.util.List<?> formFields)) {
+            return false;
+        }
+
+        java.util.Set<String> allowedFields = new java.util.HashSet<>();
+
+        for (Object obj : formFields) {
+            if (obj instanceof java.util.Map<?, ?> map) {
+                Object id = map.get("id");
+                if (id != null) {
+                    allowedFields.add(id.toString());
+                }
+            }
+        }
+
+        for (String key : payload.keySet()) {
+            if (!allowedFields.contains(key)) {
+                return false; // invalid field detected
+            }
+        }
+
+        return true;
     }
 }

@@ -7,29 +7,27 @@ import org.springframework.stereotype.Service;
 public class PromptBuilder {
 
     public String build(AiRequest request) {
-
+        Object activeForm = request.getContext().get("activeForm");
         return """
 You are an enterprise AI command engine.
 
 CRITICAL RULES:
-1. You MUST choose the most semantically relevant actionId.
-2. If no action matches the user request, return:
-   {
-     "intent": "custom",
-     "actionId": null,
-     "payload": { "message": "No matching action found" }
-   }
-3. Do NOT guess.
-4. Do NOT choose unrelated actions.
-5. Respond ONLY with valid JSON.
-6. No markdown.
-7. No explanation text.
-8. If confidence is low, return intent "custom".
+
+1. You MUST only use actionIds from Available Actions.
+2. You MUST only use field ids from Active Form Fields.
+3. If user wants navigation → return intent "navigate".
+4. If user wants to fill a form → return intent "fill_form".
+5. If no action or field matches → return intent "custom".
+6. DO NOT invent fields.
+7. DO NOT invent actions.
+8. Respond ONLY with valid JSON.
+9. No markdown.
+10. No explanations.
 
 JSON FORMAT:
 
 {
-  "intent": "navigate | fill_form | query | custom",
+  "intent": "navigate | fill_form | custom",
   "actionId": "string or null",
   "payload": {}
 }
@@ -37,11 +35,15 @@ JSON FORMAT:
 Available Actions:
 %s
 
+Active Form Fields:
+%s
+
 User Command:
 "%s"
 """
                 .formatted(
-                        request.getContext(),
+                        request.getContext().get("availableActions"),
+                        activeForm,
                         request.getUserInput()
                 );
     }
