@@ -12,7 +12,7 @@ public class GeminiAiProvider implements AiProvider {
 
     private final RestTemplate restTemplate;
 
-    @Value("${gemini.api.key:AIzaSyCtI3epwB6EIEMIDFq7IprhxEe2vXQzvng}")
+    @Value("${gemini.api.key: api-key }")
     private String apiKey;
 
     private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
