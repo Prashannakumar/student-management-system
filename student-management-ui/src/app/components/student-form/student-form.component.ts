@@ -1,47 +1,96 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { Student } from '../../models/student.model';
-import { Course } from '../../models/course.model';
 import { StudentService } from '../../services/student.service';
 import { CourseService } from '../../services/course.service';
+import { Student } from '../../models/student.model';
+import { Course } from '../../models/course.model';
+import { AiEnabledComponent } from '../../ai-interaction/base/ai-enabled.component';
+import { AiAction } from '../../ai-interaction/decorators/ai-action.decorator';
+import { FormRegistryService } from '../../ai-interaction/services/form-registry.service';
 
 @Component({
   selector: 'app-student-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule],
   templateUrl: './student-form.component.html',
   styleUrl: './student-form.component.scss'
 })
-export class StudentFormComponent implements OnInit {
-  student: Student = {
-    studentId: 0,
-    name: '',
-    email: '',
-    phone: '',
-    course: null,
-    totalFee: 0,
-    paidFee: 0,
-    balanceFee: 0
-  };
+export class StudentFormComponent extends AiEnabledComponent implements OnInit {
+  private fb = inject(FormBuilder);
+  private studentService = inject(StudentService);
+  private courseService = inject(CourseService);
+  private formRegistry = inject(FormRegistryService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
+  studentForm!: FormGroup;
   courses: Course[] = [];
   isEditMode = false;
+  studentId?: number;
 
-  constructor(
-    private studentService: StudentService,
-    private courseService: CourseService,
-    private route: ActivatedRoute,
-    private router: Router
-  ) { }
+  constructor() {
+    super();
+    this.initForm();
+  }
 
-  ngOnInit(): void {
+  override ngOnInit(): void {
+    super.ngOnInit(); // Important for AI action registration
     this.loadCourses();
+    this.formRegistry.registerForm('student-form', this.studentForm);
+
     const id = this.route.snapshot.params['id'];
     if (id) {
       this.isEditMode = true;
-      this.loadStudent(id);
+      this.studentId = +id;
+      this.loadStudent(this.studentId);
     }
+  }
+
+  override ngOnDestroy(): void {
+    super.ngOnDestroy();
+    this.formRegistry.unregisterForm('student-form');
+  }
+
+  private initForm(): void {
+    this.studentForm = this.fb.group({
+      name: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      phone: ['', Validators.required],
+      course: [null, Validators.required],
+      totalFee: [{ value: 0, disabled: true }],
+      paidFee: [0],
+      balanceFee: [{ value: 0, disabled: true }]
+    });
+
+    // Handle fee calculations
+    this.studentForm.get('course')?.valueChanges.subscribe(course => {
+      if (course) {
+        this.studentForm.patchValue({ totalFee: course.courseFee });
+        this.calculateBalance();
+      }
+    });
+
+    this.studentForm.get('paidFee')?.valueChanges.subscribe(() => {
+      this.calculateBalance();
+    });
+  }
+
+  /**
+   * AI-Exposed capability to quickly fill common student data
+   */
+  @AiAction({
+    description: 'Pre-fill the student form with demo data for testing',
+    requiredRole: 'ADMIN'
+  })
+  fillDemoData() {
+    this.studentForm.patchValue({
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+      phone: '1234567890',
+      paidFee: 500
+    });
   }
 
   loadCourses(): void {
@@ -53,35 +102,38 @@ export class StudentFormComponent implements OnInit {
 
   loadStudent(id: number): void {
     this.studentService.getStudentById(id).subscribe({
-      next: (data) => this.student = data,
+      next: (data) => {
+        this.studentForm.patchValue(data);
+        if (data.course) {
+          const selectedCourse = this.courses.find(c => c.courseId === data.course?.courseId);
+          this.studentForm.patchValue({ course: selectedCourse });
+        }
+      },
       error: (err) => console.error('Error fetching student', err)
     });
   }
 
-  onCourseChange(): void {
-    if (this.student.course) {
-      // Find the full course object to get the fee
-      const selectedCourse = this.courses.find(c => c.courseId == this.student.course?.courseId);
-      if (selectedCourse) {
-        this.student.course = selectedCourse;
-        this.student.totalFee = selectedCourse.courseFee;
-        this.calculateBalance();
-      }
-    }
-  }
-
   calculateBalance(): void {
-    this.student.balanceFee = (this.student.totalFee || 0) - (this.student.paidFee || 0);
+    const total = this.studentForm.get('totalFee')?.value || 0;
+    const paid = this.studentForm.get('paidFee')?.value || 0;
+    this.studentForm.get('balanceFee')?.patchValue(total - paid);
   }
 
   saveStudent(): void {
-    if (this.isEditMode) {
-      this.studentService.updateStudent(this.student.studentId, this.student).subscribe({
+    if (this.studentForm.invalid) return;
+
+    const studentData: Student = {
+      ...this.studentForm.getRawValue(),
+      studentId: this.studentId || 0
+    };
+
+    if (this.isEditMode && this.studentId) {
+      this.studentService.updateStudent(this.studentId, studentData).subscribe({
         next: () => this.router.navigate(['/students']),
         error: (err) => console.error('Error updating student', err)
       });
     } else {
-      this.studentService.saveStudent(this.student).subscribe({
+      this.studentService.saveStudent(studentData).subscribe({
         next: () => this.router.navigate(['/students']),
         error: (err) => console.error('Error saving student', err)
       });
