@@ -16,21 +16,21 @@ public class StudentManagementSystemApplication {
 	}
 
     // for testing - remove below
-    @Bean
-    CommandLineRunner test(GeminiProperties props) {
-        return args -> {
-            System.out.println("Model: " + props.getModel());
-            System.out.println("API Key Loaded: " + (props.getApiKey() != null));
-        };
-    }
-
-    @Bean
-    CommandLineRunner testGemini(GeminiClient client) {
-        return args -> {
-            String result = client.generate("Say hello in one word.");
-            System.out.println("Gemini Response: " + result);
-        };
-    }
+//    @Bean
+//    CommandLineRunner test(GeminiProperties props) {
+//        return args -> {
+//            System.out.println("Model: " + props.getModel());
+//            System.out.println("API Key Loaded: " + (props.getApiKey() != null));
+//        };
+//    }
+//
+//    @Bean
+//    CommandLineRunner testGemini(GeminiClient client) {
+//        return args -> {
+//            String result = client.generate("hello, how are you?");
+//            System.out.println("Gemini Response: " + result);
+//        };
+//    }
     // for testing - remove above
 
 }
