@@ -12,6 +12,6 @@ import java.util.Map;
 public class AiResponse {
 
     private String intent;
-    private String actionId;
     private Map<String, Object> payload;
+    private String message;
 }

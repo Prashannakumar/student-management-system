@@ -4,11 +4,13 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
 
 import { routes } from './app.routes';
+import { provideAiAgent } from '../../projects/angular-ai-agent/src/public-api';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
     provideHttpClient(),
-    provideAnimations()
+    provideAnimations(),
+    provideAiAgent()
   ]
 };

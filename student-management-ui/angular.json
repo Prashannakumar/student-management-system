@@ -96,6 +96,39 @@
           }
         }
       }
+    },
+    "angular-ai-agent": {
+      "projectType": "library",
+      "root": "projects/angular-ai-agent",
+      "sourceRoot": "projects/angular-ai-agent/src",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "options": {
+            "project": "projects/angular-ai-agent/ng-package.json"
+          },
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/angular-ai-agent/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/angular-ai-agent/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "tsConfig": "projects/angular-ai-agent/tsconfig.spec.json",
+            "polyfills": [
+              "zone.js",
+              "zone.js/testing"
+            ]
+          }
+        }
+      }
     }
   }
 }

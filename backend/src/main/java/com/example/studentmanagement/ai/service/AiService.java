@@ -7,8 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-
 @Service
 @RequiredArgsConstructor
 public class AiService {
@@ -16,104 +14,59 @@ public class AiService {
     private final GeminiClient geminiClient;
     private final PromptBuilder promptBuilder;
     private final ObjectMapper objectMapper;
+    private final AiResponseValidator validator;
 
     public AiResponse process(AiRequest request) {
 
-        String prompt = promptBuilder.build(request);
-        String rawResponse = geminiClient.generate(prompt);
-
         try {
+
+            // 1️⃣ Build Prompt
+            String prompt = promptBuilder.build(request);
+
+            // 2️⃣ Call Gemini
+            String rawResponse = geminiClient.generate(prompt);
+
+            // 3️⃣ Extract JSON
             String cleaned = extractJson(rawResponse);
-            AiResponse response = objectMapper.readValue(cleaned, AiResponse.class);
 
-            // Navigation validation
-            if ("navigate".equals(response.getIntent())) {
-                if (!isValidAction(response.getActionId(), request)) {
-                    return new AiResponse("custom", null,
-                            Map.of("message", "Invalid navigation action"));
-                }
-            }
+            // 4️⃣ Deserialize
+            AiResponse aiResponse =
+                    objectMapper.readValue(cleaned, AiResponse.class);
 
-            // Form validation
-            if ("fill_form".equals(response.getIntent())) {
+            // 5️⃣ Deterministic Validation Layer
+            AiResponse validated =
+                    validator.validate(aiResponse, request);
 
-                if (response.getPayload() == null ||
-                        !isValidFormPayload(response.getPayload(), request)) {
-
-                    return new AiResponse("custom", null,
-                            Map.of("message", "Invalid form fields detected"));
-                }
-            }
-
-            return response;
+            return validated;
 
         } catch (Exception e) {
-            return new AiResponse(
-                    "custom",
-                    null,
-                    Map.of("message", "AI response parsing failed")
+
+            return safeResponse(
+                    "respond",
+                    "AI processing failed: " + e.getMessage()
             );
         }
     }
 
     private String extractJson(String raw) {
+
+        if (raw == null) return "{}";
+
         int start = raw.indexOf("{");
         int end = raw.lastIndexOf("}") + 1;
+
         if (start >= 0 && end > start) {
             return raw.substring(start, end);
         }
-        return raw;
+
+        return "{}";
     }
 
-    private boolean isValidAction(String actionId, AiRequest request) {
-
-        if (actionId == null) {
-            return false;
-        }
-
-        Object actionsObj = request.getContext().get("availableActions");
-
-        if (!(actionsObj instanceof java.util.List<?> actions)) {
-            return false;
-        }
-
-        for (Object obj : actions) {
-            if (obj instanceof java.util.Map<?, ?> map) {
-                Object id = map.get("id");
-                if (actionId.equals(id)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    private boolean isValidFormPayload(Map<String, Object> payload, AiRequest request) {
-
-        Object formObj = request.getContext().get("activeForm");
-
-        if (!(formObj instanceof java.util.List<?> formFields)) {
-            return false;
-        }
-
-        java.util.Set<String> allowedFields = new java.util.HashSet<>();
-
-        for (Object obj : formFields) {
-            if (obj instanceof java.util.Map<?, ?> map) {
-                Object id = map.get("id");
-                if (id != null) {
-                    allowedFields.add(id.toString());
-                }
-            }
-        }
-
-        for (String key : payload.keySet()) {
-            if (!allowedFields.contains(key)) {
-                return false; // invalid field detected
-            }
-        }
-
-        return true;
+    private AiResponse safeResponse(String intent, String message) {
+        AiResponse response = new AiResponse();
+        response.setIntent(intent);
+        response.setMessage(message);
+        response.setPayload(null);
+        return response;
     }
 }
